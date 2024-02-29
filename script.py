@@ -1,6 +1,7 @@
 #6149557967:AAGplgzjTwIWFPZLrBFjzFK-MTkAqAQFNfQ
 
 import asyncio
+import json
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
@@ -22,3 +23,11 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+class UserData():
+    def SaveUserData(user_id: int, data):
+        pass
+
+    def GetUserData(user_id: int):
+        pass
