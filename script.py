@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+from aiogram.enums import ParseMode
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, Filter
 from bs4 import BeautifulSoup
@@ -97,6 +98,27 @@ async def selectGroup(message: types.Message):
     dataDispatcher.savedata()
     await message.answer("Группа указана", reply_markup=keyboard)
 
+@dp.message(Command("get_user"))
+async def getCurrentUser(message: types.Message):
+    user = find_user(message.from_user.id, dataDispatcher.users)
+    text = ''
+
+    text += f"ID группы: {user["group_id"]}\n"
+    text += f"Подгруппа: {user["subgroup"]}\n\n"
+    text += f"Другие подгруппы: {"Включены" if user["showSubgroups"] else "Выключены"}\n"
+
+    await message.answer(text, reply_markup=keyboard)
+
+@dp.message(Command("show_other"))
+async def showOtherSubgroup(message: types.Message):
+    user = find_user(message.from_user.id, dataDispatcher.users)
+
+    user["showSubgroups"] = not user["showSubgroups"]
+    dataDispatcher.savedata()
+
+    print("lol")
+    await message.answer("Другие подгруппы выключены" if not user["showSubgroups"] else "Другие подгруппы включены")
+
 
 @dp.message(MyFilter(F.text))
 async def day_handler(message: types.Message):
@@ -126,11 +148,13 @@ async def day_handler(message: types.Message):
                 current.pop(0)
             if len(current) == 4:
                 subgroup = int(re.findall(r"\d+", current[3].text)[0])
-                if subgroup == int(user["subgroup"]):
+                if subgroup == int(user["subgroup"]) or user["showSubgroups"]:
                     text += f"Предмет: {current[0].text}\n"
                     text += f"Преподаватель: {current[1].text}\n"
                     text += f"Место: {current[2].text}\n"
-                    text += f"Время: {time}\n\n"
+                    text += f"Время: {time}\n"
+
+                    text += f"<b>!Подгруппа: {subgroup}!</b>\n\n"
 
                 else:
                     continue
@@ -140,30 +164,11 @@ async def day_handler(message: types.Message):
                 text += f"Место: {current[2].text}\n"
                 text += f"Время: {time}\n\n"
 
-        await message.answer(text, reply_markup=keyboard)
+        await message.answer(text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
     else:
-        await message.answer("На завтра ничего нет", reply_markup=keyboard)
+        await message.answer("На завтра ничего нет" if message.text.lower() == "завтра" else "На сегодня ничего нет", reply_markup=keyboard)
 
 
-@dp.message(Command("get_user"))
-async def getCurrentUser(message: types.Message):
-    user = find_user(message.from_user.id, dataDispatcher.users)
-    text = ''
-
-    text += f"ID группы: {user["group_id"]}\n"
-    text += f"Подгруппа: {user["subgroup"]}\n\n"
-    text += f"Другие подгруппы: {"Включены" if user["showSubgroups"] else "Выключены"}\n"
-
-    await message.answer(text, reply_markup=keyboard)
-
-@dp.message(Command("show_other"))
-async def showOtherSubgroup(message: types.Message):
-    user = find_user(message.from_user.id, dataDispatcher.users)
-
-    user["showSubgroups"] = not user["showSubgroups"]
-    dataDispatcher.savedata()
-
-    await message.answer("Другие подгруппы выключены" if not user["showSubgroups"] else "Другие подгруппы включены")
 
 async def main():
     await dp.start_polling(bot)
